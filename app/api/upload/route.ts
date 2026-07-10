@@ -1,0 +1,58 @@
+import { NextResponse } from "next/server";
+import {
+    uploadFile,
+    deleteFile
+} from "@/services/storageService";
+import { randomUUID } from "crypto";
+import {insertUpload, UploadRecord} from "@/services/uploadService";
+
+export async function POST(req: Request) {
+    const formData = await req.formData();
+    const files = formData.getAll("files") as File[];
+
+    const result = [];
+
+    for (const file of files) {
+
+        const extension = file.name.includes(".")
+            ? file.name.substring(file.name.lastIndexOf("."))
+            : "";
+
+        const objectKey = `${randomUUID()}${extension}`;
+
+        const buffer = Buffer.from(await file.arrayBuffer());
+
+
+        const publicUrl = await uploadFile(
+            objectKey,
+            buffer,
+            file.type
+        );
+
+        try {
+
+            await insertUpload({
+                name: file.name,
+                objectKey,
+                publicUrl,
+                mimeType: file.type,
+                size: file.size
+            });
+
+        } catch (err) {
+
+            await deleteFile(objectKey);
+
+            throw err;
+        }
+
+
+        result.push({
+            fileName: file.name,
+            objectKey: objectKey,
+            publicUrl: `${process.env.R2_PUBLIC_URL}/${objectKey}`,
+        });
+    }
+
+    return NextResponse.json(result);
+}
