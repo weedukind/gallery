@@ -1,14 +1,6 @@
 import db from "@/lib/db";
-
-export interface UploadRecord {
-    id?: number;
-    name: string;
-    objectKey: string;
-    publicUrl: string;
-    mimeType: string;
-    size: number;
-    created_at?: Date;
-}
+import { UploadRecord } from "@/types/upload";
+import { getTagsForUploads } from "./tagService";
 
 export async function insertUpload(upload: UploadRecord): Promise<void> {
 
@@ -41,7 +33,29 @@ export async function getUploads(): Promise<UploadRecord[]> {
          ORDER BY created_at DESC`
     );
 
-    return rows as UploadRecord[];
+    const uploads = rows as UploadRecord[];
+    for (const upload of uploads) {
+
+        if (upload.created_at) {
+
+            upload.createdAtFormatted =
+                new Intl.DateTimeFormat("de-DE", {
+                    dateStyle: "short",
+                    timeStyle: "medium",
+                    timeZone: "Europe/Berlin",
+                }).format(new Date(upload.created_at));
+
+        }
+
+    }
+
+    const tags = await getTagsForUploads();
+
+    for (const upload of uploads) {
+        upload.tags = tags.get(upload.id!) ?? [];
+    }
+
+    return uploads;
 }
 
 export async function getUpload(id: number): Promise<UploadRecord | null> {
