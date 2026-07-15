@@ -1,6 +1,9 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {UploadRecord} from "@/types/upload";
 import {TagRecord} from "@/types/tag";
-import DeleteButton from "./DeleteButton";
 import TagEditor from "./TagEditor";
 
 interface FileTableProps {
@@ -42,12 +45,79 @@ function formatSize(bytes: number): string {
 
 export default function FileTable({uploads, allTags}: FileTableProps) {
 
+    const router = useRouter();
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [deleting, setDeleting] = useState(false);
+
+    const allSelected = uploads.length > 0 && selectedIds.length === uploads.length;
+
+    function toggleAll() {
+        setSelectedIds(allSelected ? [] : uploads.map(upload => upload.id!));
+    }
+
+    function toggleOne(id: number) {
+        setSelectedIds(current =>
+            current.includes(id)
+                ? current.filter(existing => existing !== id)
+                : [...current, id]
+        );
+    }
+
+    async function deleteSelected() {
+
+        if (selectedIds.length === 0)
+            return;
+
+        if (!confirm(`${selectedIds.length} Datei(en) wirklich löschen?`))
+            return;
+
+        setDeleting(true);
+
+        const results = await Promise.all(
+            selectedIds.map(id =>
+                fetch(`/api/upload/${id}`, { method: "DELETE" })
+            )
+        );
+
+        setDeleting(false);
+
+        if (results.some(res => !res.ok)) {
+            alert("Nicht alle Dateien konnten gelöscht werden.");
+        }
+
+        setSelectedIds([]);
+        router.refresh();
+    }
+
     return (
-        <table className="min-w-full border border-gray-300 border-collapse">
+        <div>
+
+            <div className="mb-2">
+                <button
+                    onClick={deleteSelected}
+                    disabled={selectedIds.length === 0 || deleting}
+                    className="rounded bg-red-600 px-3 py-1 text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                    {deleting
+                        ? "Löschen läuft..."
+                        : `Ausgewählte löschen (${selectedIds.length})`}
+                </button>
+            </div>
+
+            <table className="min-w-full border border-gray-300 border-collapse">
 
             <thead className="bg-gray-100 text-black">
 
             <tr>
+                <th className="border border-gray-300 p-2 text-center">
+                    <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={toggleAll}
+                        aria-label="Alle auswählen"
+                    />
+                </th>
+
                 <th className="border border-gray-300 p-2 text-left">
                     ID
                 </th>
@@ -79,10 +149,6 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
                 <th className="border border-gray-300 p-2 text-left">
                     Tags
                 </th>
-
-                <th className="border border-gray-300 p-2 text-center">
-                    Aktionen
-                </th>
             </tr>
 
             </thead>
@@ -95,6 +161,15 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
                     key={upload.id}
                     className="hover:bg-gray-50"
                 >
+
+                    <td className="border border-gray-300 p-2 text-center">
+                        <input
+                            type="checkbox"
+                            checked={selectedIds.includes(upload.id!)}
+                            onChange={() => toggleOne(upload.id!)}
+                            aria-label={`${upload.name} auswählen`}
+                        />
+                    </td>
 
                     <td className="border border-gray-300 p-2">
                         {upload.id}
@@ -141,16 +216,14 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
                         />
                     </td>
 
-                    <td className="border border-gray-300 p-2 text-center">
-                        <DeleteButton id={upload.id!}/>
-                    </td>
-
                 </tr>
 
             ))}
 
             </tbody>
 
-        </table>
+            </table>
+
+        </div>
     );
 }
