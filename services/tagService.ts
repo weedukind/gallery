@@ -51,6 +51,13 @@ export async function createTag(
     };
 }
 
+interface UploadTagRow {
+    upload_id: number;
+    id: number;
+    name: string;
+    color: string;
+}
+
 export async function getTagsForUploads(): Promise<Map<number, TagRecord[]>> {
 
     const [rows] = await db.query(
@@ -67,7 +74,7 @@ export async function getTagsForUploads(): Promise<Map<number, TagRecord[]>> {
 
     const map = new Map<number, TagRecord[]>();
 
-    for (const row of rows as any[]) {
+    for (const row of rows as UploadTagRow[]) {
 
         if (!map.has(row.upload_id)) {
             map.set(row.upload_id, []);

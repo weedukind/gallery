@@ -1,7 +1,3 @@
-"use client";
-
-import { useState } from "react";
-
 import { UploadRecord } from "@/types/upload";
 import { TagRecord } from "@/types/tag";
 import FileTable from "./FileTable";
@@ -11,8 +7,6 @@ interface Props {
     allTags: TagRecord[];
 }
 export default function FileManager({ uploads, allTags }: Props) {
-
-    const [selectedUpload, setSelectedUpload] = useState<UploadRecord | null>(null);
 
     return (
         <div className="p-6">

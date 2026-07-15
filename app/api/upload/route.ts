@@ -4,7 +4,7 @@ import {
     deleteFile
 } from "@/services/storageService";
 import { randomUUID } from "crypto";
-import {insertUpload, UploadRecord} from "@/services/uploadService";
+import {insertUpload} from "@/services/uploadService";
 
 export async function POST(req: Request) {
     const formData = await req.formData();
