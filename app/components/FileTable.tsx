@@ -1,68 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import {UploadRecord} from "@/types/upload";
-import {TagRecord} from "@/types/tag";
+import { UploadRecord } from "@/types/upload";
+import { TagRecord } from "@/types/tag";
+import { formatSize } from "@/lib/formatSize";
+import { useSelection } from "@/hooks/useSelection";
 import TagEditor from "./TagEditor";
-import TagPicker from "./TagPicker";
+import TagFilterBar from "./TagFilterBar";
+import BulkDeleteButton from "./BulkDeleteButton";
+import BulkTagButton from "./BulkTagButton";
 
 interface FileTableProps {
     uploads: UploadRecord[];
     allTags: TagRecord[];
 }
 
-const MAX_DIGITS = 4;
-
-function formatWithMaxDigits(value: number, suffix: string): string {
-
-    let decimals = Math.max(0, MAX_DIGITS - Math.trunc(value).toString().length);
-    let rounded = Number(value.toFixed(decimals));
-
-    // rounding can carry into an extra integer digit (e.g. 999.99 -> 1000), so recheck once
-    if (decimals > 0 && Math.trunc(rounded).toString().length > Math.trunc(value).toString().length) {
-        decimals -= 1;
-        rounded = Number(value.toFixed(decimals));
-    }
-
-    return `${rounded.toLocaleString("de-DE", {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals
-    })} ${suffix}`;
-}
-
-function formatSize(bytes: number): string {
-
-    if (bytes < 1024)
-        return bytes.toLocaleString("de-DE");
-
-    const kb = bytes / 1024;
-
-    if (kb < 1024)
-        return formatWithMaxDigits(kb, "kB");
-
-    return formatWithMaxDigits(kb / 1024, "MB");
-}
-
-function tagIdKey(upload: UploadRecord): string {
-    return (upload.tags ?? [])
-        .map(tag => tag.id!)
-        .sort((a, b) => a - b)
-        .join(",");
-}
-
 export default function FileTable({uploads, allTags}: FileTableProps) {
 
-    const router = useRouter();
-    const [selectedIds, setSelectedIds] = useState<number[]>([]);
-    const [deleting, setDeleting] = useState(false);
     const [activeTagFilters, setActiveTagFilters] = useState<number[]>([]);
-    const [showBulkTagPicker, setShowBulkTagPicker] = useState(false);
-
-    const selectedUploads = uploads.filter(upload => selectedIds.includes(upload.id!));
-
-    const canBulkEditTags = selectedUploads.length > 0
-        && selectedUploads.every(upload => tagIdKey(upload) === tagIdKey(selectedUploads[0]));
 
     const filteredUploads = activeTagFilters.length === 0
         ? uploads
@@ -72,19 +27,15 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
             )
         );
 
-    const allSelected = filteredUploads.length > 0
-        && filteredUploads.every(upload => selectedIds.includes(upload.id!));
+    const {
+        selectedIds,
+        setSelectedIds,
+        allSelected,
+        toggleAll,
+        toggleOne
+    } = useSelection(filteredUploads.map(upload => upload.id!));
 
-    function toggleAll() {
-
-        const filteredIds = filteredUploads.map(upload => upload.id!);
-
-        setSelectedIds(current =>
-            allSelected
-                ? current.filter(id => !filteredIds.includes(id))
-                : [...current, ...filteredIds.filter(id => !current.includes(id))]
-        );
-    }
+    const selectedUploads = uploads.filter(upload => selectedIds.includes(upload.id!));
 
     function toggleTagFilter(tagId: number) {
         setActiveTagFilters(current =>
@@ -94,142 +45,29 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
         );
     }
 
-    function toggleOne(id: number) {
-        setSelectedIds(current =>
-            current.includes(id)
-                ? current.filter(existing => existing !== id)
-                : [...current, id]
-        );
-    }
-
-    async function saveBulkTags(checkedTagIds: number[]) {
-
-        const assignedTagIds = (selectedUploads[0].tags ?? []).map(tag => tag.id!);
-        const toAdd = checkedTagIds.filter(tagId => !assignedTagIds.includes(tagId));
-        const toRemove = assignedTagIds.filter(tagId => !checkedTagIds.includes(tagId));
-
-        await Promise.all(
-            selectedUploads.flatMap(upload => [
-                ...toAdd.map(tagId =>
-                    fetch(`/api/uploads/${upload.id}/tags`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ tagId })
-                    })
-                ),
-                ...toRemove.map(tagId =>
-                    fetch(`/api/uploads/${upload.id}/tags`, {
-                        method: "DELETE",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ tagId })
-                    })
-                )
-            ])
-        );
-
-        setShowBulkTagPicker(false);
-        router.refresh();
-    }
-
-    async function deleteSelected() {
-
-        if (selectedIds.length === 0)
-            return;
-
-        if (!confirm(`${selectedIds.length} Datei(en) wirklich löschen?`))
-            return;
-
-        setDeleting(true);
-
-        const results = await Promise.all(
-            selectedIds.map(id =>
-                fetch(`/api/upload/${id}`, { method: "DELETE" })
-            )
-        );
-
-        setDeleting(false);
-
-        if (results.some(res => !res.ok)) {
-            alert("Nicht alle Dateien konnten gelöscht werden.");
-        }
-
-        setSelectedIds([]);
-        router.refresh();
-    }
-
     return (
         <div>
 
             <div className="mb-2 flex items-center gap-2">
 
-                <button
-                    onClick={deleteSelected}
-                    disabled={selectedIds.length === 0 || deleting}
-                    className="rounded bg-red-600 px-3 py-1 text-white hover:bg-red-700 disabled:opacity-50"
-                >
-                    {deleting
-                        ? "Löschen läuft..."
-                        : `Ausgewählte löschen (${selectedIds.length})`}
-                </button>
+                <BulkDeleteButton
+                    selectedIds={selectedIds}
+                    onDeleted={() => setSelectedIds([])}
+                />
 
-                <span className="relative inline-block">
-
-                    <button
-                        onClick={() => setShowBulkTagPicker(current => !current)}
-                        disabled={!canBulkEditTags}
-                        className="rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700 disabled:opacity-50"
-                    >
-                        Tags bearbeiten
-                    </button>
-
-                    {showBulkTagPicker && canBulkEditTags && (
-                        <TagPicker
-                            currentTagIds={(selectedUploads[0].tags ?? []).map(tag => tag.id!)}
-                            allTags={allTags}
-                            onSave={saveBulkTags}
-                        />
-                    )}
-
-                </span>
+                <BulkTagButton
+                    selectedUploads={selectedUploads}
+                    allTags={allTags}
+                />
 
             </div>
 
-            <div className="mb-4 flex flex-wrap items-center gap-2">
-
-                <span className="text-sm text-gray-600">
-                    Nach Tags filtern:
-                </span>
-
-                {allTags.map(tag => {
-
-                    const active = activeTagFilters.includes(tag.id!);
-
-                    return (
-                        <button
-                            key={tag.id}
-                            onClick={() => toggleTagFilter(tag.id!)}
-                            className="rounded px-2 py-0.5 text-xs"
-                            style={{
-                                backgroundColor: active ? tag.color : "transparent",
-                                color: active ? "white" : tag.color,
-                                border: `1px solid ${tag.color}`
-                            }}
-                        >
-                            {tag.name}
-                        </button>
-                    );
-                })}
-
-                {activeTagFilters.length > 0 && (
-                    <button
-                        onClick={() => setActiveTagFilters([])}
-                        className="text-xs text-gray-500 underline"
-                    >
-                        Filter zurücksetzen
-                    </button>
-                )}
-
-            </div>
+            <TagFilterBar
+                allTags={allTags}
+                activeTagIds={activeTagFilters}
+                onToggle={toggleTagFilter}
+                onReset={() => setActiveTagFilters([])}
+            />
 
             <table className="min-w-full border border-gray-300 border-collapse">
 
