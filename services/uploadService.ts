@@ -6,14 +6,16 @@ export async function insertUpload(upload: UploadRecord): Promise<void> {
 
     await db.execute(
         `INSERT INTO uploads
-            (name, object_key, public_url, mime_type, size)
-         VALUES (?, ?, ?, ?, ?)`,
+            (name, object_key, public_url, mime_type, size, width, height)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
             upload.name,
             upload.objectKey,
             upload.publicUrl,
             upload.mimeType,
-            upload.size
+            upload.size,
+            upload.width ?? null,
+            upload.height ?? null
         ]
     );
 }
@@ -28,6 +30,8 @@ export async function getUploads(): Promise<UploadRecord[]> {
             public_url AS publicUrl,
             mime_type AS mimeType,
             size,
+            width,
+            height,
             created_at
          FROM uploads
          ORDER BY created_at DESC`
@@ -68,6 +72,8 @@ export async function getUpload(id: number): Promise<UploadRecord | null> {
             public_url AS publicUrl,
             mime_type AS mimeType,
             size,
+            width,
+            height,
             created_at
          FROM uploads
          WHERE id = ?`,

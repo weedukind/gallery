@@ -7,6 +7,8 @@ export interface UploadRecord {
     publicUrl: string;
     mimeType: string;
     size: number;
+    width?: number | null;
+    height?: number | null;
     created_at?: Date;
     createdAtFormatted?: string;
     tags?: TagRecord[];

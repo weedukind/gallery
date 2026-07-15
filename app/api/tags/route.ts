@@ -20,7 +20,21 @@ export async function POST(request: Request) {
         );
     }
 
-    const tag = await createTag(name);
+    try {
 
-    return NextResponse.json(tag);
+        const tag = await createTag(name);
+
+        return NextResponse.json(tag);
+
+    } catch (err) {
+
+        if (err instanceof Error && "code" in err && err.code === "ER_DUP_ENTRY") {
+            return NextResponse.json(
+                { error: "Ein Tag mit diesem Namen existiert bereits." },
+                { status: 409 }
+            );
+        }
+
+        throw err;
+    }
 }

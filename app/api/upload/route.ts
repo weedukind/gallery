@@ -5,6 +5,7 @@ import {
 } from "@/services/storageService";
 import { randomUUID } from "crypto";
 import {insertUpload} from "@/services/uploadService";
+import { imageSize } from "image-size";
 
 export async function POST(req: Request) {
     const formData = await req.formData();
@@ -22,6 +23,14 @@ export async function POST(req: Request) {
 
         const buffer = Buffer.from(await file.arrayBuffer());
 
+        let width: number | null = null;
+        let height: number | null = null;
+
+        try {
+            // non-image uploads (or unsupported formats) simply keep width/height as null
+            ({ width, height } = imageSize(buffer));
+        } catch {
+        }
 
         const publicUrl = await uploadFile(
             objectKey,
@@ -36,7 +45,9 @@ export async function POST(req: Request) {
                 objectKey,
                 publicUrl,
                 mimeType: file.type,
-                size: file.size
+                size: file.size,
+                width,
+                height
             });
 
         } catch (err) {

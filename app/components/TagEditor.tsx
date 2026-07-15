@@ -95,7 +95,8 @@ export default function TagEditor({ uploadId, tags, allTags }: Props) {
         });
 
         if (!createRes.ok) {
-            alert("Tag konnte nicht erstellt werden.");
+            const error = await createRes.json().catch(() => null);
+            alert(error?.error ?? "Tag konnte nicht erstellt werden.");
             return;
         }
 
