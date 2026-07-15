@@ -48,11 +48,36 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
     const router = useRouter();
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [deleting, setDeleting] = useState(false);
+    const [activeTagFilters, setActiveTagFilters] = useState<number[]>([]);
 
-    const allSelected = uploads.length > 0 && selectedIds.length === uploads.length;
+    const filteredUploads = activeTagFilters.length === 0
+        ? uploads
+        : uploads.filter(upload =>
+            activeTagFilters.every(tagId =>
+                upload.tags?.some(tag => tag.id === tagId)
+            )
+        );
+
+    const allSelected = filteredUploads.length > 0
+        && filteredUploads.every(upload => selectedIds.includes(upload.id!));
 
     function toggleAll() {
-        setSelectedIds(allSelected ? [] : uploads.map(upload => upload.id!));
+
+        const filteredIds = filteredUploads.map(upload => upload.id!);
+
+        setSelectedIds(current =>
+            allSelected
+                ? current.filter(id => !filteredIds.includes(id))
+                : [...current, ...filteredIds.filter(id => !current.includes(id))]
+        );
+    }
+
+    function toggleTagFilter(tagId: number) {
+        setActiveTagFilters(current =>
+            current.includes(tagId)
+                ? current.filter(existing => existing !== tagId)
+                : [...current, tagId]
+        );
     }
 
     function toggleOne(id: number) {
@@ -102,6 +127,43 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
                         ? "Löschen läuft..."
                         : `Ausgewählte löschen (${selectedIds.length})`}
                 </button>
+            </div>
+
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+
+                <span className="text-sm text-gray-600">
+                    Nach Tags filtern:
+                </span>
+
+                {allTags.map(tag => {
+
+                    const active = activeTagFilters.includes(tag.id!);
+
+                    return (
+                        <button
+                            key={tag.id}
+                            onClick={() => toggleTagFilter(tag.id!)}
+                            className="rounded px-2 py-0.5 text-xs"
+                            style={{
+                                backgroundColor: active ? tag.color : "transparent",
+                                color: active ? "white" : tag.color,
+                                border: `1px solid ${tag.color}`
+                            }}
+                        >
+                            {tag.name}
+                        </button>
+                    );
+                })}
+
+                {activeTagFilters.length > 0 && (
+                    <button
+                        onClick={() => setActiveTagFilters([])}
+                        className="text-xs text-gray-500 underline"
+                    >
+                        Filter zurücksetzen
+                    </button>
+                )}
+
             </div>
 
             <table className="min-w-full border border-gray-300 border-collapse">
@@ -155,7 +217,20 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
 
             <tbody>
 
-            {uploads.map(upload => (
+            {activeTagFilters.length > 0 && filteredUploads.length === 0 && (
+
+                <tr>
+                    <td
+                        colSpan={9}
+                        className="border border-gray-300 p-2 text-center text-gray-500"
+                    >
+                        Keine Bilder mit allen ausgewählten Tags gefunden.
+                    </td>
+                </tr>
+
+            )}
+
+            {filteredUploads.map(upload => (
 
                 <tr
                     key={upload.id}
