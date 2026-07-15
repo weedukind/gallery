@@ -1,0 +1,7 @@
+CREATE TABLE tags (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    color VARCHAR(20) NOT NULL DEFAULT '#3b82f6',
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_tag_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
