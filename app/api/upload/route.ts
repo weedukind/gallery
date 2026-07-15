@@ -38,9 +38,11 @@ export async function POST(req: Request) {
             file.type
         );
 
+        let id: number;
+
         try {
 
-            await insertUpload({
+            id = await insertUpload({
                 name: file.name,
                 objectKey,
                 publicUrl,
@@ -59,6 +61,7 @@ export async function POST(req: Request) {
 
 
         result.push({
+            id,
             fileName: file.name,
             objectKey: objectKey,
             publicUrl: `${process.env.R2_PUBLIC_URL}/${objectKey}`,

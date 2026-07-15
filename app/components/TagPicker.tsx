@@ -1,22 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { TagRecord } from "@/types/tag";
 
 interface Props {
-    uploadIds: number[];
-    currentTags: TagRecord[];
+    currentTagIds: number[];
     allTags: TagRecord[];
-    onClose: () => void;
+    onSave: (tagIds: number[]) => void | Promise<void>;
 }
 
-export default function TagPicker({ uploadIds, currentTags, allTags, onClose }: Props) {
+export default function TagPicker({ currentTagIds, allTags, onSave }: Props) {
 
-    const router = useRouter();
     const [newTagName, setNewTagName] = useState("");
-    const [checkedTagIds, setCheckedTagIds] = useState<number[]>(currentTags.map(tag => tag.id!));
+    const [checkedTagIds, setCheckedTagIds] = useState<number[]>(currentTagIds);
     const [localTags, setLocalTags] = useState<TagRecord[]>([]);
+    const [saving, setSaving] = useState(false);
 
     const pickerTags = [
         ...allTags,
@@ -30,35 +28,6 @@ export default function TagPicker({ uploadIds, currentTags, allTags, onClose }: 
                 ? current.filter(id => id !== tagId)
                 : [...current, tagId]
         );
-    }
-
-    async function save() {
-
-        const assignedTagIds = currentTags.map(tag => tag.id!);
-        const toAdd = checkedTagIds.filter(tagId => !assignedTagIds.includes(tagId));
-        const toRemove = assignedTagIds.filter(tagId => !checkedTagIds.includes(tagId));
-
-        await Promise.all(
-            uploadIds.flatMap(uploadId => [
-                ...toAdd.map(tagId =>
-                    fetch(`/api/uploads/${uploadId}/tags`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ tagId })
-                    })
-                ),
-                ...toRemove.map(tagId =>
-                    fetch(`/api/uploads/${uploadId}/tags`, {
-                        method: "DELETE",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ tagId })
-                    })
-                )
-            ])
-        );
-
-        router.refresh();
-        onClose();
     }
 
     async function createTag() {
@@ -85,6 +54,15 @@ export default function TagPicker({ uploadIds, currentTags, allTags, onClose }: 
         setLocalTags(current => [...current, newTag]);
         setCheckedTagIds(current => [...current, newTag.id!]);
         setNewTagName("");
+    }
+
+    async function handleSave() {
+
+        setSaving(true);
+
+        await onSave(checkedTagIds);
+
+        setSaving(false);
     }
 
     return (
@@ -129,10 +107,11 @@ export default function TagPicker({ uploadIds, currentTags, allTags, onClose }: 
             </div>
 
             <button
-                onClick={save}
-                className="mt-2 w-full rounded bg-blue-600 px-2 py-0.5 text-xs text-white hover:bg-blue-700"
+                onClick={handleSave}
+                disabled={saving}
+                className="mt-2 w-full rounded bg-blue-600 px-2 py-0.5 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
             >
-                Speichern
+                {saving ? "Speichert…" : "Speichern"}
             </button>
 
         </div>

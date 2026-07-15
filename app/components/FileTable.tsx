@@ -102,6 +102,35 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
         );
     }
 
+    async function saveBulkTags(checkedTagIds: number[]) {
+
+        const assignedTagIds = (selectedUploads[0].tags ?? []).map(tag => tag.id!);
+        const toAdd = checkedTagIds.filter(tagId => !assignedTagIds.includes(tagId));
+        const toRemove = assignedTagIds.filter(tagId => !checkedTagIds.includes(tagId));
+
+        await Promise.all(
+            selectedUploads.flatMap(upload => [
+                ...toAdd.map(tagId =>
+                    fetch(`/api/uploads/${upload.id}/tags`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ tagId })
+                    })
+                ),
+                ...toRemove.map(tagId =>
+                    fetch(`/api/uploads/${upload.id}/tags`, {
+                        method: "DELETE",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ tagId })
+                    })
+                )
+            ])
+        );
+
+        setShowBulkTagPicker(false);
+        router.refresh();
+    }
+
     async function deleteSelected() {
 
         if (selectedIds.length === 0)
@@ -155,10 +184,9 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
 
                     {showBulkTagPicker && canBulkEditTags && (
                         <TagPicker
-                            uploadIds={selectedUploads.map(upload => upload.id!)}
-                            currentTags={selectedUploads[0].tags ?? []}
+                            currentTagIds={(selectedUploads[0].tags ?? []).map(tag => tag.id!)}
                             allTags={allTags}
-                            onClose={() => setShowBulkTagPicker(false)}
+                            onSave={saveBulkTags}
                         />
                     )}
 

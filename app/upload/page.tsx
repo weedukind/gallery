@@ -1,6 +1,9 @@
+import { getTags } from "@/services/tagService";
 import UploadForm from "../components/UploadForm";
 
-export default function UploadPage() {
+export default async function UploadPage() {
+
+    const allTags = await getTags();
 
     return (
         <div className="p-6">
@@ -9,7 +12,7 @@ export default function UploadPage() {
                 Upload
             </h1>
 
-            <UploadForm />
+            <UploadForm allTags={allTags} />
 
         </div>
     );
