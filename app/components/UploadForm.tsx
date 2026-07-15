@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { UploadResult } from "@/types/upload";
-
+import { useRouter } from "next/navigation";
 
 export default function UploadForm() {
 
-    const [files, setFiles] = useState<UploadResult[]>([]);
+    const router = useRouter();
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [uploading, setUploading] = useState(false);
 
@@ -33,11 +32,13 @@ export default function UploadForm() {
             body: form
         });
 
-        const data = await res.json();
+        if (!res.ok) {
+            alert("Upload fehlgeschlagen.");
+            setUploading(false);
+            return;
+        }
 
-        setFiles(data);
-        setSelectedFiles([]);
-        setUploading(false);
+        router.push("/");
     }
 
     return (
@@ -78,52 +79,6 @@ export default function UploadForm() {
                     </button>
 
                 </div>
-
-            )}
-
-            {files.length > 0 && (
-
-                <table className="min-w-full border border-gray-300">
-
-                    <thead className="bg-gray-100">
-
-                    <tr>
-                        <th className="border p-2 text-left">Name</th>
-                        <th className="border p-2 text-left">URL</th>
-                    </tr>
-
-                    </thead>
-
-                    <tbody>
-
-                    {files.map((file, index) => (
-
-                        <tr key={index}>
-
-                            <td className="border p-2">
-                                {file.name}
-                            </td>
-
-                            <td className="border p-2">
-
-                                <a
-                                    href={file.publicUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-blue-600 hover:underline"
-                                >
-                                    Öffnen
-                                </a>
-
-                            </td>
-
-                        </tr>
-
-                    ))}
-
-                    </tbody>
-
-                </table>
 
             )}
 

@@ -11,8 +11,3 @@ export interface UploadRecord {
     createdAtFormatted?: string;
     tags?: TagRecord[];
 }
-
-export interface UploadResult {
-    name: string;
-    publicUrl: string;
-}
