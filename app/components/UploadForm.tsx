@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { TagRecord } from "@/types/tag";
+import { assignTag, uploadFiles } from "@/lib/api";
 import TagPicker from "./TagPicker";
 
 interface Props {
@@ -34,35 +35,20 @@ export default function UploadForm({ allTags }: Props) {
 
         setUploading(true);
 
-        const form = new FormData();
+        let uploaded;
 
-        for (const file of selectedFiles) {
-            form.append("files", file);
-        }
-
-        const res = await fetch("/api/upload", {
-            method: "POST",
-            body: form
-        });
-
-        if (!res.ok) {
-            alert("Upload fehlgeschlagen.");
+        try {
+            uploaded = await uploadFiles(selectedFiles);
+        } catch (err) {
+            alert(err instanceof Error ? err.message : "Upload fehlgeschlagen.");
             setUploading(false);
             return;
         }
 
-        const uploaded: { id: number }[] = await res.json();
-
         if (selectedTagIds.length > 0) {
             await Promise.all(
                 uploaded.flatMap(file =>
-                    selectedTagIds.map(tagId =>
-                        fetch(`/api/uploads/${file.id}/tags`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ tagId })
-                        })
-                    )
+                    selectedTagIds.map(tagId => assignTag(file.id, tagId))
                 )
             );
         }

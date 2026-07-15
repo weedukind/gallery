@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { deleteUpload } from "@/lib/api";
 
 interface Props {
     selectedIds: number[];
@@ -23,15 +24,13 @@ export default function BulkDeleteButton({ selectedIds, onDeleted }: Props) {
 
         setDeleting(true);
 
-        const results = await Promise.all(
-            selectedIds.map(id =>
-                fetch(`/api/upload/${id}`, { method: "DELETE" })
-            )
+        const results = await Promise.allSettled(
+            selectedIds.map(id => deleteUpload(id))
         );
 
         setDeleting(false);
 
-        if (results.some(res => !res.ok)) {
+        if (results.some(result => result.status === "rejected")) {
             alert("Nicht alle Dateien konnten gelöscht werden.");
         }
 

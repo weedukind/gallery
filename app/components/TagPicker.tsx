@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { TagRecord } from "@/types/tag";
+import { createTag } from "@/lib/api";
 
 interface Props {
     currentTagIds: number[];
@@ -30,26 +31,21 @@ export default function TagPicker({ currentTagIds, allTags, onSave }: Props) {
         );
     }
 
-    async function createTag() {
+    async function handleCreateTag() {
 
         const name = newTagName.trim();
 
         if (!name)
             return;
 
-        const createRes = await fetch("/api/tags", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name })
-        });
+        let newTag: TagRecord;
 
-        if (!createRes.ok) {
-            const error = await createRes.json().catch(() => null);
-            alert(error?.error ?? "Tag konnte nicht erstellt werden.");
+        try {
+            newTag = await createTag(name);
+        } catch (err) {
+            alert(err instanceof Error ? err.message : "Tag konnte nicht erstellt werden.");
             return;
         }
-
-        const newTag: TagRecord = await createRes.json();
 
         setLocalTags(current => [...current, newTag]);
         setCheckedTagIds(current => [...current, newTag.id!]);
@@ -97,7 +93,7 @@ export default function TagPicker({ currentTagIds, allTags, onSave }: Props) {
                 />
 
                 <button
-                    onClick={createTag}
+                    onClick={handleCreateTag}
                     disabled={!newTagName.trim()}
                     className="shrink-0 rounded bg-green-600 px-2 py-0.5 text-xs text-white hover:bg-green-700 disabled:opacity-50"
                 >

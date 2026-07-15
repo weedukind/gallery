@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { TagRecord } from "@/types/tag";
+import { unassignTag } from "@/lib/api";
 
 interface Props {
     uploadId: number;
@@ -14,14 +15,10 @@ export default function TagEditor({ uploadId, tags }: Props) {
 
     async function removeTag(tagId: number) {
 
-        const res = await fetch(`/api/uploads/${uploadId}/tags`, {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ tagId })
-        });
-
-        if (!res.ok) {
-            alert("Tag konnte nicht entfernt werden.");
+        try {
+            await unassignTag(uploadId, tagId);
+        } catch (err) {
+            alert(err instanceof Error ? err.message : "Tag konnte nicht entfernt werden.");
             return;
         }
 

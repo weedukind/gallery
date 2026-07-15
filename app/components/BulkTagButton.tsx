@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { UploadRecord } from "@/types/upload";
 import { TagRecord } from "@/types/tag";
+import { assignTag, unassignTag } from "@/lib/api";
 import TagPicker from "./TagPicker";
 
 interface Props {
@@ -32,24 +33,16 @@ export default function BulkTagButton({ selectedUploads, allTags }: Props) {
         const toAdd = checkedTagIds.filter(tagId => !assignedTagIds.includes(tagId));
         const toRemove = assignedTagIds.filter(tagId => !checkedTagIds.includes(tagId));
 
-        await Promise.all(
+        const results = await Promise.allSettled(
             selectedUploads.flatMap(upload => [
-                ...toAdd.map(tagId =>
-                    fetch(`/api/uploads/${upload.id}/tags`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ tagId })
-                    })
-                ),
-                ...toRemove.map(tagId =>
-                    fetch(`/api/uploads/${upload.id}/tags`, {
-                        method: "DELETE",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ tagId })
-                    })
-                )
+                ...toAdd.map(tagId => assignTag(upload.id!, tagId)),
+                ...toRemove.map(tagId => unassignTag(upload.id!, tagId))
             ])
         );
+
+        if (results.some(result => result.status === "rejected")) {
+            alert("Nicht alle Tags konnten aktualisiert werden.");
+        }
 
         setShowPicker(false);
         router.refresh();
