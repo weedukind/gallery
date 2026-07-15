@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {UploadRecord} from "@/types/upload";
 import {TagRecord} from "@/types/tag";
 import TagEditor from "./TagEditor";
+import TagPicker from "./TagPicker";
 
 interface FileTableProps {
     uploads: UploadRecord[];
@@ -43,12 +44,25 @@ function formatSize(bytes: number): string {
     return formatWithMaxDigits(kb / 1024, "MB");
 }
 
+function tagIdKey(upload: UploadRecord): string {
+    return (upload.tags ?? [])
+        .map(tag => tag.id!)
+        .sort((a, b) => a - b)
+        .join(",");
+}
+
 export default function FileTable({uploads, allTags}: FileTableProps) {
 
     const router = useRouter();
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [deleting, setDeleting] = useState(false);
     const [activeTagFilters, setActiveTagFilters] = useState<number[]>([]);
+    const [showBulkTagPicker, setShowBulkTagPicker] = useState(false);
+
+    const selectedUploads = uploads.filter(upload => selectedIds.includes(upload.id!));
+
+    const canBulkEditTags = selectedUploads.length > 0
+        && selectedUploads.every(upload => tagIdKey(upload) === tagIdKey(selectedUploads[0]));
 
     const filteredUploads = activeTagFilters.length === 0
         ? uploads
@@ -117,7 +131,8 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
     return (
         <div>
 
-            <div className="mb-2">
+            <div className="mb-2 flex items-center gap-2">
+
                 <button
                     onClick={deleteSelected}
                     disabled={selectedIds.length === 0 || deleting}
@@ -127,6 +142,28 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
                         ? "Löschen läuft..."
                         : `Ausgewählte löschen (${selectedIds.length})`}
                 </button>
+
+                <span className="relative inline-block">
+
+                    <button
+                        onClick={() => setShowBulkTagPicker(current => !current)}
+                        disabled={!canBulkEditTags}
+                        className="rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700 disabled:opacity-50"
+                    >
+                        Tags bearbeiten
+                    </button>
+
+                    {showBulkTagPicker && canBulkEditTags && (
+                        <TagPicker
+                            uploadIds={selectedUploads.map(upload => upload.id!)}
+                            currentTags={selectedUploads[0].tags ?? []}
+                            allTags={allTags}
+                            onClose={() => setShowBulkTagPicker(false)}
+                        />
+                    )}
+
+                </span>
+
             </div>
 
             <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -207,10 +244,6 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
                 <th className="border border-gray-300 p-2 text-left">
                     Datei
                 </th>
-
-                <th className="border border-gray-300 p-2 text-left">
-                    Tags
-                </th>
             </tr>
 
             </thead>
@@ -221,7 +254,7 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
 
                 <tr>
                     <td
-                        colSpan={9}
+                        colSpan={8}
                         className="border border-gray-300 p-2 text-center text-gray-500"
                     >
                         Keine Bilder mit allen ausgewählten Tags gefunden.
@@ -251,7 +284,11 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
                     </td>
 
                     <td className="border border-gray-300 p-2">
-                        {upload.name}
+                        <div className="mb-1">{upload.name}</div>
+                        <TagEditor
+                            uploadId={upload.id!}
+                            tags={upload.tags ?? []}
+                        />
                     </td>
 
                     <td className="border border-gray-300 p-2 text-right">
@@ -281,14 +318,6 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
                         >
                             Öffnen
                         </a>
-                    </td>
-
-                    <td className="border border-gray-300 p-2">
-                        <TagEditor
-                            uploadId={upload.id!}
-                            tags={upload.tags ?? []}
-                            allTags={allTags}
-                        />
                     </td>
 
                 </tr>
