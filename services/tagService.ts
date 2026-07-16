@@ -148,3 +148,29 @@ export async function removeTag(
         [uploadId, tagId]
     );
 }
+
+export async function getTagIdsForUpload(uploadId: number): Promise<number[]> {
+
+    const rows = await db.query<{ tag_id: number }>(
+        `SELECT tag_id
+         FROM upload_tags
+         WHERE upload_id = ?`,
+        [uploadId]
+    );
+
+    return rows.map(row => row.tag_id);
+}
+
+export async function deleteTagIfOrphaned(tagId: number): Promise<void> {
+
+    const rows = await db.query<{ count: number }>(
+        `SELECT COUNT(*) AS count
+         FROM upload_tags
+         WHERE tag_id = ?`,
+        [tagId]
+    );
+
+    if (rows[0].count === 0) {
+        await db.execute(`DELETE FROM tags WHERE id = ?`, [tagId]);
+    }
+}

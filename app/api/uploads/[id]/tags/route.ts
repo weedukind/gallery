@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 
 import {
     assignTag,
-    removeTag
+    removeTag,
+    deleteTagIfOrphaned
 } from "@/services/tagService";
 
 export async function POST(
@@ -37,6 +38,8 @@ export async function DELETE(
         Number(id),
         body.tagId
     );
+
+    await deleteTagIfOrphaned(body.tagId);
 
     return NextResponse.json({
         success: true
