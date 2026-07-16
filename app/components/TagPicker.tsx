@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { TagRecord } from "@/types/tag";
 import { createTag } from "@/lib/api";
+import TagChip from "./TagChip";
 
 interface Props {
     currentTagIds: number[];
@@ -66,25 +67,14 @@ export default function TagPicker({ currentTagIds, allTags, onSave }: Props) {
 
             <div className="flex max-h-40 flex-wrap gap-1 overflow-y-auto">
 
-                {pickerTags.map(tag => {
-
-                    const checked = checkedTagIds.includes(tag.id!);
-
-                    return (
-                        <button
-                            key={tag.id}
-                            onClick={() => toggleTag(tag.id!)}
-                            className="rounded px-2 py-0.5 text-left text-xs"
-                            style={{
-                                backgroundColor: checked ? tag.color : "transparent",
-                                color: checked ? "white" : tag.color,
-                                border: `1px solid ${tag.color}`
-                            }}
-                        >
-                            {tag.name}
-                        </button>
-                    );
-                })}
+                {pickerTags.map(tag => (
+                    <TagChip
+                        key={tag.id}
+                        tag={tag}
+                        active={checkedTagIds.includes(tag.id!)}
+                        onClick={() => toggleTag(tag.id!)}
+                    />
+                ))}
 
             </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { TagRecord } from "@/types/tag";
+import TagChip from "./TagChip";
 
 interface Props {
     allTags: TagRecord[];
@@ -18,25 +19,14 @@ export default function TagFilterBar({ allTags, activeTagIds, onToggle, onReset 
                 Nach Tags filtern:
             </span>
 
-            {allTags.map(tag => {
-
-                const active = activeTagIds.includes(tag.id!);
-
-                return (
-                    <button
-                        key={tag.id}
-                        onClick={() => onToggle(tag.id!)}
-                        className="rounded px-2 py-0.5 text-xs"
-                        style={{
-                            backgroundColor: active ? tag.color : "transparent",
-                            color: active ? "white" : tag.color,
-                            border: `1px solid ${tag.color}`
-                        }}
-                    >
-                        {tag.name}
-                    </button>
-                );
-            })}
+            {allTags.map(tag => (
+                <TagChip
+                    key={tag.id}
+                    tag={tag}
+                    active={activeTagIds.includes(tag.id!)}
+                    onClick={() => onToggle(tag.id!)}
+                />
+            ))}
 
             {activeTagIds.length > 0 && (
                 <button
