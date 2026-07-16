@@ -152,7 +152,6 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
                     <td className="border border-gray-300 p-2">
                         <div className="mb-1">{upload.name}</div>
                         <TagEditor
-                            uploadId={upload.id!}
                             tags={upload.tags ?? []}
                         />
                     </td>
