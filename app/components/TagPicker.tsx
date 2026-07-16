@@ -64,21 +64,27 @@ export default function TagPicker({ currentTagIds, allTags, onSave }: Props) {
     return (
         <div className="absolute left-0 top-full z-10 mt-1 w-40 rounded border border-gray-300 bg-white p-2 shadow">
 
-            <div className="flex max-h-40 flex-col gap-1 overflow-y-auto">
+            <div className="flex max-h-40 flex-wrap gap-1 overflow-y-auto">
 
-                {pickerTags.map(tag => (
-                    <label
-                        key={tag.id}
-                        className="flex items-center gap-1 text-xs text-black"
-                    >
-                        <input
-                            type="checkbox"
-                            checked={checkedTagIds.includes(tag.id!)}
-                            onChange={() => toggleTag(tag.id!)}
-                        />
-                        {tag.name}
-                    </label>
-                ))}
+                {pickerTags.map(tag => {
+
+                    const checked = checkedTagIds.includes(tag.id!);
+
+                    return (
+                        <button
+                            key={tag.id}
+                            onClick={() => toggleTag(tag.id!)}
+                            className="rounded px-2 py-0.5 text-left text-xs"
+                            style={{
+                                backgroundColor: checked ? tag.color : "transparent",
+                                color: checked ? "white" : tag.color,
+                                border: `1px solid ${tag.color}`
+                            }}
+                        >
+                            {tag.name}
+                        </button>
+                    );
+                })}
 
             </div>
 

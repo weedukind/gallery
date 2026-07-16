@@ -73,19 +73,45 @@ export async function deleteUpload(id: number): Promise<void> {
     );
 }
 
-export async function uploadFiles(files: File[]): Promise<UploadedFile[]> {
+export function uploadFileWithProgress(
+    file: File,
+    onProgress: (pct: number) => void
+): Promise<UploadedFile> {
 
-    const form = new FormData();
+    return new Promise((resolve, reject) => {
 
-    for (const file of files) {
+        const form = new FormData();
         form.append("files", file);
-    }
 
-    const res = await request(
-        "/api/upload",
-        { method: "POST", body: form },
-        "Upload fehlgeschlagen."
-    );
+        const xhr = new XMLHttpRequest();
 
-    return res.json();
+        xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+                onProgress(Math.round((event.loaded / event.total) * 100));
+            }
+        };
+
+        xhr.onload = () => {
+
+            if (xhr.status < 200 || xhr.status >= 300) {
+                const message = (() => {
+                    try {
+                        return JSON.parse(xhr.responseText)?.error;
+                    } catch {
+                        return null;
+                    }
+                })();
+                reject(new Error(message ?? "Upload fehlgeschlagen."));
+                return;
+            }
+
+            const uploaded: UploadedFile[] = JSON.parse(xhr.responseText);
+            resolve(uploaded[0]);
+        };
+
+        xhr.onerror = () => reject(new Error("Upload fehlgeschlagen."));
+
+        xhr.open("POST", "/api/upload");
+        xhr.send(form);
+    });
 }

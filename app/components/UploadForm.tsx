@@ -3,29 +3,44 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { TagRecord } from "@/types/tag";
-import { assignTag, uploadFiles } from "@/lib/api";
+import { assignTag, uploadFileWithProgress } from "@/lib/api";
 import TagPicker from "./TagPicker";
+import ProgressBar from "./ProgressBar";
 
 interface Props {
     allTags: TagRecord[];
+}
+
+interface FileState {
+    progress: number;
+    error: boolean;
 }
 
 export default function UploadForm({ allTags }: Props) {
 
     const router = useRouter();
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [fileStates, setFileStates] = useState<FileState[]>([]);
     const [uploading, setUploading] = useState(false);
     const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
     const [showTagPicker, setShowTagPicker] = useState(false);
 
     function onSelectFiles(e: React.ChangeEvent<HTMLInputElement>) {
         if (!e.target.files) return;
-        setSelectedFiles(Array.from(e.target.files));
+        const files = Array.from(e.target.files);
+        setSelectedFiles(files);
+        setFileStates(files.map(() => ({ progress: 0, error: false })));
     }
 
     function saveTagSelection(tagIds: number[]) {
         setSelectedTagIds(tagIds);
         setShowTagPicker(false);
+    }
+
+    function updateFileState(index: number, patch: Partial<FileState>) {
+        setFileStates(current =>
+            current.map((state, i) => (i === index ? { ...state, ...patch } : state))
+        );
     }
 
     async function upload() {
@@ -35,17 +50,34 @@ export default function UploadForm({ allTags }: Props) {
 
         setUploading(true);
 
-        let uploaded;
+        const results = await Promise.allSettled(
+            selectedFiles.map((file, index) =>
+                uploadFileWithProgress(file, pct => updateFileState(index, { progress: pct }))
+            )
+        );
 
-        try {
-            uploaded = await uploadFiles(selectedFiles);
-        } catch (err) {
-            alert(err instanceof Error ? err.message : "Upload fehlgeschlagen.");
-            setUploading(false);
-            return;
+        setUploading(false);
+
+        const uploaded = [];
+
+        for (let index = 0; index < results.length; index++) {
+
+            const result = results[index];
+
+            if (result.status === "fulfilled") {
+                uploaded.push(result.value);
+            } else {
+                updateFileState(index, { error: true });
+            }
         }
 
-        if (selectedTagIds.length > 0) {
+        const failedCount = results.length - uploaded.length;
+
+        if (failedCount > 0) {
+            alert(`${failedCount} Datei(en) konnten nicht hochgeladen werden.`);
+        }
+
+        if (selectedTagIds.length > 0 && uploaded.length > 0) {
             await Promise.all(
                 uploaded.flatMap(file =>
                     selectedTagIds.map(tagId => assignTag(file.id, tagId))
@@ -53,7 +85,9 @@ export default function UploadForm({ allTags }: Props) {
             );
         }
 
-        router.push("/");
+        if (failedCount === 0) {
+            router.push("/");
+        }
     }
 
     return (
@@ -73,11 +107,22 @@ export default function UploadForm({ allTags }: Props) {
                         Ausgewählte Dateien
                     </h2>
 
-                    <ul className="list-disc ml-6">
+                    <ul className="space-y-2">
 
-                        {selectedFiles.map(file => (
-                            <li key={file.name}>
-                                {file.name}
+                        {selectedFiles.map((file, index) => (
+                            <li key={`${file.name}-${index}`}>
+                                <div className="flex justify-between text-sm">
+                                    <span>{file.name}</span>
+                                    <span>
+                                        {fileStates[index]?.error
+                                            ? "Fehlgeschlagen"
+                                            : `${fileStates[index]?.progress ?? 0}%`}
+                                    </span>
+                                </div>
+                                <ProgressBar
+                                    percent={fileStates[index]?.progress ?? 0}
+                                    error={fileStates[index]?.error}
+                                />
                             </li>
                         ))}
 
