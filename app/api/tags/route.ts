@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
     } catch (err) {
 
-        if (err instanceof Error && "code" in err && err.code === "ER_DUP_ENTRY") {
+        if (err instanceof Error && err.message.includes("UNIQUE constraint failed")) {
             return NextResponse.json(
                 { error: "Ein Tag mit diesem Namen existiert bereits." },
                 { status: 409 }

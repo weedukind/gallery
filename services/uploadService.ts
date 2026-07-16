@@ -1,11 +1,10 @@
-import { ResultSetHeader } from "mysql2";
 import db from "@/lib/db";
 import { UploadRecord } from "@/types/upload";
 import { getTagsForUploads } from "./tagService";
 
 export async function insertUpload(upload: UploadRecord): Promise<number> {
 
-    const [result] = await db.execute<ResultSetHeader>(
+    const result = await db.execute(
         `INSERT INTO uploads
             (name, object_key, public_url, mime_type, size, width, height)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -25,7 +24,7 @@ export async function insertUpload(upload: UploadRecord): Promise<number> {
 
 export async function getUploads(): Promise<UploadRecord[]> {
 
-    const [rows] = await db.query(
+    const rows = await db.query(
         `SELECT
             id,
             name,
@@ -67,7 +66,7 @@ export async function getUploads(): Promise<UploadRecord[]> {
 
 export async function getUpload(id: number): Promise<UploadRecord | null> {
 
-    const [rows] = await db.query(
+    const rows = await db.query(
         `SELECT
             id,
             name,

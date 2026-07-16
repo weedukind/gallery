@@ -1,10 +1,9 @@
-import { ResultSetHeader } from "mysql2";
 import db from "@/lib/db";
 import { TagRecord } from "@/types/tag";
 
 export async function getTags(): Promise<TagRecord[]> {
 
-    const [rows] = await db.query(
+    const rows = await db.query(
         `SELECT
             id,
             name,
@@ -18,7 +17,7 @@ export async function getTags(): Promise<TagRecord[]> {
 
 export async function getTagByName(name: string): Promise<TagRecord | null> {
 
-    const [rows] = await db.query(
+    const rows = await db.query(
         `SELECT
             id,
             name,
@@ -38,7 +37,7 @@ export async function createTag(
     color = "#3b82f6"
 ): Promise<TagRecord> {
 
-    const [result] = await db.execute<ResultSetHeader>(
+    const result = await db.execute(
         `INSERT INTO tags (name, color)
          VALUES (?, ?)`,
         [name, color]
@@ -60,7 +59,7 @@ interface UploadTagRow {
 
 export async function getTagsForUploads(): Promise<Map<number, TagRecord[]>> {
 
-    const [rows] = await db.query(
+    const rows = await db.query(
         `SELECT
             ut.upload_id,
             t.id,
@@ -96,7 +95,7 @@ export async function assignTag(
 ): Promise<void> {
 
     await db.execute(
-        `INSERT IGNORE INTO upload_tags
+        `INSERT OR IGNORE INTO upload_tags
             (upload_id, tag_id)
          VALUES (?, ?)`,
         [uploadId, tagId]

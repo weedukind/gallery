@@ -9,7 +9,7 @@ export interface UploadRecord {
     size: number;
     width?: number | null;
     height?: number | null;
-    created_at?: Date;
+    created_at?: string;
     createdAtFormatted?: string;
     tags?: TagRecord[];
 }
