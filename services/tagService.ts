@@ -174,3 +174,50 @@ export async function deleteTagIfOrphaned(tagId: number): Promise<void> {
         await db.execute(`DELETE FROM tags WHERE id = ?`, [tagId]);
     }
 }
+
+export async function getTagsWithUsageCounts(): Promise<TagRecord[]> {
+
+    const rows = await db.query(
+        `SELECT
+            t.id,
+            t.name,
+            t.color,
+            COUNT(ut.upload_id) AS usageCount
+         FROM tags t
+         LEFT JOIN upload_tags ut
+           ON ut.tag_id = t.id
+         GROUP BY t.id
+         ORDER BY t.name`
+    );
+
+    return rows as TagRecord[];
+}
+
+export async function updateTag(
+    id: number,
+    name: string,
+    color: string
+): Promise<void> {
+
+    await db.execute(
+        `UPDATE tags
+         SET name = ?, color = ?
+         WHERE id = ?`,
+        [name, color, id]
+    );
+}
+
+export async function deleteTag(id: number): Promise<void> {
+
+    await db.execute(
+        `DELETE FROM upload_tags
+         WHERE tag_id = ?`,
+        [id]
+    );
+
+    await db.execute(
+        `DELETE FROM tags
+         WHERE id = ?`,
+        [id]
+    );
+}

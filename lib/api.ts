@@ -55,14 +55,31 @@ export async function unassignTag(uploadId: number, tagId: number): Promise<void
     );
 }
 
-export async function createTag(name: string): Promise<TagRecord> {
+export async function createTag(name: string, color?: string): Promise<TagRecord> {
     const res = await jsonRequest(
         "/api/tags",
         "POST",
-        { name },
+        { name, color },
         "Tag konnte nicht erstellt werden."
     );
     return res.json();
+}
+
+export async function updateTag(id: number, name: string, color: string): Promise<void> {
+    await jsonRequest(
+        `/api/tags/${id}`,
+        "PATCH",
+        { name, color },
+        "Tag konnte nicht aktualisiert werden."
+    );
+}
+
+export async function deleteTag(id: number): Promise<void> {
+    await request(
+        `/api/tags/${id}`,
+        { method: "DELETE" },
+        "Tag konnte nicht gelöscht werden."
+    );
 }
 
 export async function deleteUpload(id: number): Promise<void> {

@@ -25,6 +25,13 @@ export default function Navigation() {
                     Upload
                 </Link>
 
+                <Link
+                    href="/tags"
+                    className="hover:text-sky-300"
+                >
+                    Tag-Verwaltung
+                </Link>
+
             </div>
 
         </nav>
