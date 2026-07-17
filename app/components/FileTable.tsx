@@ -84,10 +84,6 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
                 </th>
 
                 <th className="border border-gray-300 p-2 text-left">
-                    ID
-                </th>
-
-                <th className="border border-gray-300 p-2 text-left">
                     Name
                 </th>
 
@@ -120,7 +116,7 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
 
                 <tr>
                     <td
-                        colSpan={8}
+                        colSpan={7}
                         className="border border-gray-300 p-2 text-center text-gray-500"
                     >
                         Keine Bilder mit allen ausgewählten Tags gefunden.
@@ -143,10 +139,6 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
                             onChange={() => toggleOne(upload.id!)}
                             aria-label={`${upload.name} auswählen`}
                         />
-                    </td>
-
-                    <td className="border border-gray-300 p-2">
-                        {upload.id}
                     </td>
 
                     <td className="border border-gray-300 p-2">
