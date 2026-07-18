@@ -4,6 +4,7 @@ import { useState } from "react";
 import { UploadRecord } from "@/types/upload";
 import { TagRecord } from "@/types/tag";
 import { formatSize } from "@/lib/formatSize";
+import { toCsv, downloadCsv } from "@/lib/csv";
 import { useSelection } from "@/hooks/useSelection";
 import TagEditor from "./TagEditor";
 import TagFilterBar from "./TagFilterBar";
@@ -45,6 +46,32 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
         );
     }
 
+    function exportCsv() {
+
+        const headers = ["Name", "Größe", "Maße", "Typ", "Hochgeladen", "Tags", "Link"];
+
+        const rows = filteredUploads.map(upload => [
+            upload.name,
+            formatSize(upload.size),
+            upload.width && upload.height ? `${upload.width} × ${upload.height}` : "",
+            upload.mimeType,
+            upload.createdAtFormatted ?? "",
+            (upload.tags ?? []).map(tag => tag.name).join("; "),
+            upload.publicUrl
+        ]);
+
+        const activeTagNames = activeTagFilters
+            .map(tagId => allTags.find(tag => tag.id === tagId)?.name)
+            .filter((name): name is string => !!name)
+            .map(name => name.toLowerCase());
+
+        const filename = activeTagNames.length > 0
+            ? `${activeTagNames.join("-")}.csv`
+            : "uploads.csv";
+
+        downloadCsv(filename, toCsv(headers, rows));
+    }
+
     return (
         <div>
 
@@ -59,6 +86,14 @@ export default function FileTable({uploads, allTags}: FileTableProps) {
                     selectedUploads={selectedUploads}
                     allTags={allTags}
                 />
+
+                <button
+                    onClick={exportCsv}
+                    disabled={filteredUploads.length === 0}
+                    className="rounded bg-green-600 px-3 py-1 text-white hover:bg-green-700 disabled:opacity-50"
+                >
+                    Als CSV exportieren
+                </button>
 
             </div>
 
